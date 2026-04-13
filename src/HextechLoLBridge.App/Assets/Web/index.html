@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Hextech LoL Bridge</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar glass-panel">
+      <div class="sidebar-header">
+        <div class="brand-mark">HB</div>
+        <div class="brand-text-block">
+          <div class="brand-title">Hextech Bridge</div>
+          <div class="brand-subtitle">LoL × Logitech LIGHTSYNC</div>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-nav-target="section-overview"><span class="nav-icon">⌘</span><span class="nav-label">总览</span></button>
+        <button class="nav-item" data-nav-target="section-live"><span class="nav-icon">◎</span><span class="nav-label">对局数据</span></button>
+        <button class="nav-item" data-nav-target="section-spells"><span class="nav-icon">✦</span><span class="nav-label">召唤师技能颜色</span></button>
+        <button class="nav-item" data-nav-target="section-keyboard"><span class="nav-icon">⌨</span><span class="nav-label">键盘映射</span></button>
+        <button class="nav-item" data-nav-target="section-heroes"><span class="nav-icon">⚑</span><span class="nav-label">英雄主题色</span></button>
+        <button class="nav-item" data-nav-target="section-objectives"><span class="nav-icon">◇</span><span class="nav-label">史诗资源 / 当前增益</span></button>
+        <button class="nav-item" data-nav-target="section-sdk"><span class="nav-icon">✺</span><span class="nav-label">LIGHTSYNC</span></button>
+        <button class="nav-item" data-nav-target="section-logs"><span class="nav-icon">☰</span><span class="nav-label">备注 / 日志</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-label">版本</div>
+        <div id="versionBadge" class="version-pill">--</div>
+        <div id="runtimeInfo" class="sidebar-runtime">--</div>
+      </div>
+    </aside>
+
+    <main class="content-area">
+      <section class="page-hero glass-panel">
+        <div>
+          <div class="page-kicker">HEXTECH CONTROL</div>
+          <h1 id="pageTitle">总览</h1>
+          <p id="pageSubtitle" class="page-subtitle">默认键盘保持熄灯；已学习且可用的技能会点亮。若官方未返回 ready，将启用兼容判定。</p>
+        </div>
+        <div class="hero-actions">
+          <button id="startBtn" class="action-btn primary" type="button">开始轮询</button>
+          <button id="refreshBtn" class="action-btn ghost" type="button">刷新一次</button>
+          <button id="stopBtn" class="action-btn ghost" type="button">停止轮询</button>
+        </div>
+      </section>
+
+      <section id="section-overview" class="content-section active" data-page-title="总览" data-page-subtitle="快速查看连接状态、客户端阶段、局内信息与当前键盘策略。">
+        <div class="content-grid overview-grid-four">
+          <article class="card glass-panel stat-card">
+            <div class="card-header"><h3>连接</h3><span id="connectionBadge" class="status-chip secondary">--</span></div>
+            <div class="metric-line"><span>轮询状态</span><strong id="pollingState">--</strong></div>
+            <div class="metric-line"><span>轮询次数</span><strong id="pollCount">0</strong></div>
+            <div class="metric-line"><span>最近成功</span><strong id="lastSuccess">--</strong></div>
+            <div class="metric-line"><span>局内状态</span><strong id="inGameBadge">--</strong></div>
+          </article>
+
+          <article class="card glass-panel stat-card">
+            <div class="card-header"><h3>客户端阶段</h3><span id="clientPhaseBadge" class="status-chip secondary">--</span></div>
+            <div class="metric-line"><span>Ready Check</span><strong id="readyCheckState">--</strong></div>
+            <div class="metric-line"><span>响应</span><strong id="readyCheckPlayerResponse">--</strong></div>
+            <div class="metric-line"><span>剩余时间</span><strong id="readyCheckTimer">--</strong></div>
+            <div class="metric-line"><span>空格接受</span><strong id="readyCheckActionHint">--</strong></div>
+          </article>
+
+          <article class="card glass-panel stat-card">
+            <div class="card-header"><h3>对局</h3><span id="teamBadge" class="team-chip neutral">未知方</span></div>
+            <div class="metric-line"><span>地图</span><strong id="mapName">--</strong></div>
+            <div class="metric-line"><span>模式</span><strong id="gameMode">--</strong></div>
+            <div class="metric-line"><span>地形</span><strong id="mapTerrain">--</strong></div>
+            <div class="metric-line"><span>时长</span><strong id="gameTime">00:00</strong></div>
+          </article>
+
+          <article class="card glass-panel stat-card">
+            <div class="card-header"><h3>选人 / 进游戏</h3><span id="champSelectPhase" class="status-chip secondary">--</span></div>
+            <div class="metric-line"><span>倒计时</span><strong id="champSelectTimer">--</strong></div>
+            <div class="metric-line"><span>D / F 双招</span><strong id="champSelectSpellsSummary">--</strong></div>
+            <div class="metric-line"><span>说明</span><strong>数字行会显示进游戏倒计时</strong></div>
+          </article>
+        </div>
+
+        <div class="content-grid two-columns-top-gap">
+          <article class="card glass-panel hero-card">
+            <div class="hero-player-top">
+              <div>
+                <div class="hero-player-name" id="riotId">--</div>
+                <div class="muted-line"><span id="championName">--</span> · 等级 <span id="playerLevel">0</span></div>
+              </div>
+              <div class="hero-chip-stack">
+                <span id="deathBadge" class="status-chip secondary">存活</span>
+                <span id="skillPointBadge" class="status-chip gold">可分配技能点 0</span>
+              </div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-label-row"><span>生命值</span><strong id="healthText">0 / 0</strong></div>
+              <div class="bar-track"><div id="healthBar" class="bar-fill danger"></div></div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-label-row"><span>资源</span><strong id="resourceText">0 / 0</strong></div>
+              <div class="bar-track"><div id="resourceBar" class="bar-fill cyan"></div></div>
+            </div>
+            <div class="mini-grid three-up">
+              <div class="mini-kpi"><span>K</span><strong id="kills">0</strong></div>
+              <div class="mini-kpi"><span>D</span><strong id="deaths">0</strong></div>
+              <div class="mini-kpi"><span>A</span><strong id="assists">0</strong></div>
+            </div>
+            <div class="mini-grid one-up">
+              <div class="mini-kpi"><span>CS</span><strong id="cs">0</strong></div>
+            </div>
+          </article>
+
+          <article class="card glass-panel">
+            <div class="card-header"><h3>当前灯光策略</h3><span class="status-chip secondary">默认熄灯</span></div>
+            <div class="stack-list">
+              <div class="stack-item">默认不再铺整机底色。没有可用功能时，键盘保持熄灯。</div>
+              <div class="stack-item">Ready Check 时，空格白色脉冲，其它键蓝色脉冲。</div>
+              <div class="stack-item">Q / W / E / R 只有在<strong>已学习 + 可用（含兼容判定）+ 不在 CD</strong>时才会点亮。</div>
+              <div class="stack-item">死亡与血量条改到顶部 15 段宽条：~1234567890-= 与 Backspace（按 2 段计）。</div>
+            </div>
+            <div class="subsection-heading">推荐升级</div>
+            <div class="recommend-slot" id="recommendSlot">-</div>
+            <div class="recommend-name" id="recommendTitle">暂无推荐</div>
+            <div class="muted-line" id="recommendReason">等待局内状态。</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-live" class="content-section" data-page-title="对局数据" data-page-subtitle="这里看大厅 / 排队 / Ready Check / 选人阶段，以及局内技能与双招读取情况。">
+        <div class="content-grid two-columns">
+          <article class="card glass-panel">
+            <div class="card-header"><h3>客户端阶段</h3><span id="liveClientPhaseBadge" class="status-chip secondary">--</span></div>
+            <div class="metric-line"><span>Ready Check</span><strong id="liveReadyCheckState">--</strong></div>
+            <div class="metric-line"><span>响应</span><strong id="liveReadyCheckResponse">--</strong></div>
+            <div class="metric-line"><span>Ready 剩余时间</span><strong id="liveReadyCheckTimer">--</strong></div>
+            <div class="metric-line"><span>选人阶段</span><strong id="liveChampPhase">--</strong></div>
+            <div class="metric-line"><span>进游戏倒计时</span><strong id="liveChampTimer">--</strong></div>
+            <div class="hero-actions top-gap">
+              <button id="acceptReadyBtn" class="action-btn primary" type="button">接受对局</button>
+            </div>
+            <div class="muted-line top-gap">当前实现为：窗口聚焦时可按空格，或点击上面的按钮。</div>
+          </article>
+
+          <article class="card glass-panel">
+            <div class="card-header"><h3>当前双招</h3><span class="status-chip secondary">颜色跟随配置</span></div>
+            <div id="summonerSpellsGrid" class="spell-live-list empty-state">暂无双招数据</div>
+            <div class="subsection-heading">选人阶段双招</div>
+            <div id="champSelectSpellsGrid" class="spell-live-list empty-state">暂无选人双招</div>
+          </article>
+        </div>
+
+        <div class="content-grid two-columns top-gap-block">
+          <article class="card glass-panel">
+            <div class="card-header"><h3>技能状态</h3><span class="status-chip secondary">未学 / CD 都不亮</span></div>
+            <div id="abilitiesGrid" class="ability-grid empty-state">暂无技能数据</div>
+          </article>
+
+          <article class="card glass-panel">
+            <div class="card-header"><h3>死亡倒计时与血条</h3><span class="status-chip gold">顶部宽条 + 蓝条</span></div>
+            <div class="stack-list">
+              <div class="stack-item">死亡时顶部宽条整体亮红。</div>
+              <div class="stack-item">10 秒内会按 15 段比例逐步熄灭。</div>
+              <div class="stack-item">复活后，顶部宽条切到绿色血量条。</div>
+              <div class="stack-item">选人准备进游戏时，数字行会尝试显示倒计时。</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-spells" class="content-section" data-page-title="召唤师技能颜色" data-page-subtitle="一行一个技能。支持色轮、十六进制颜色代码，以及恢复默认。">
+        <article class="card glass-panel">
+          <div class="card-header"><h3>召唤师技能主题色</h3><span class="status-chip gold">会同步到 D / F 灯光</span></div>
+          <div class="list-head spell-setting-head">
+            <span>技能</span>
+            <span>颜色</span>
+            <span>十六进制</span>
+            <span>默认</span>
+            <span>预览</span>
+          </div>
+          <div id="spellThemeList" class="spell-setting-list empty-state">暂无技能色表</div>
+        </article>
+      </section>
+
+      <section id="section-keyboard" class="content-section" data-page-title="键盘映射" data-page-subtitle="点击上方功能，再点击下方键盘上的键位即可改映射。">
+        <div class="content-grid keyboard-layout-grid">
+          <article class="card glass-panel">
+            <div class="card-header"><h3>待映射功能</h3><span class="status-chip secondary">先选功能，再点键位</span></div>
+            <div id="mappingActionPills" class="action-pill-wrap empty-state">暂无映射动作</div>
+            <div class="subsection-heading">当前映射</div>
+            <div id="keyMappingTable" class="stack-list empty-state">暂无映射</div>
+          </article>
+
+          <article class="card glass-panel keyboard-card wide-card">
+            <div class="card-header"><h3>键盘视图</h3><span class="status-chip secondary">小窗口会自动折叠侧栏</span></div>
+            <div id="keyboardGrid" class="keyboard-grid empty-state">暂无键盘布局</div>
+          </article>
+        </div>
+      </section>
+
+
+      <section id="section-heroes" class="content-section" data-page-title="英雄主题色" data-page-subtitle="不再硬猜英雄主题色。这里可以搜索英雄、改色、恢复默认；当前英雄会自动出现在列表里。">
+        <article class="card glass-panel">
+          <div class="card-header"><h3>英雄主题色</h3><span class="status-chip gold">会同步到鼠标 G 灯、外围键与 Q/W/E/R</span></div>
+          <div class="hero-theme-toolbar">
+            <input id="heroSearchInput" class="hex-input hero-search-input" type="text" placeholder="搜索英雄名 / 拼音 / 英文名" />
+          </div>
+          <div class="list-head spell-setting-head">
+            <span>英雄</span>
+            <span>颜色</span>
+            <span>十六进制</span>
+            <span>默认</span>
+            <span>预览</span>
+          </div>
+          <div id="heroThemeList" class="spell-setting-list empty-state">暂无英雄色表</div>
+        </article>
+      </section>
+
+      <section id="section-objectives" class="content-section" data-page-title="史诗资源 / 当前增益" data-page-subtitle="这里只保留史诗野怪与当前增益，不再显示红蓝 Buff 魔像。">
+        <div class="content-grid two-columns">
+          <article class="card glass-panel">
+            <div class="card-header"><h3>当前增益</h3><span id="buffDataBadge" class="status-chip secondary">等待数据</span></div>
+            <div class="buff-flag-grid one-up"><div class="flag-box"><span>Baron Buff</span><strong id="baronBuffState">未知</strong></div></div>
+            <div class="subsection-heading">当前增益列表</div>
+            <div id="buffsList" class="stack-list empty-state">暂无 Buff 数据</div>
+          </article>
+          <article class="card glass-panel">
+            <div class="card-header"><h3>史诗野怪</h3><span class="status-chip secondary">按事件流累计</span></div>
+            <div id="objectivesGrid" class="objective-grid empty-state">暂无史诗野怪数据</div>
+            <div class="subsection-heading">最近事件</div>
+            <div id="eventsList" class="stack-list empty-state">暂无事件</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-sdk" class="content-section" data-page-title="LIGHTSYNC" data-page-subtitle="当前开始走真实 Logitech DLL：对局外直接还权给 G HUB；对局内才接管键盘和鼠标。">
+        <div class="content-grid two-columns">
+          <article class="card glass-panel">
+            <div class="card-header"><h3>SDK 状态</h3><span id="sdkStateBadge" class="status-chip secondary">idle</span></div>
+            <div class="metric-line"><span>DLL 是否存在</span><strong id="sdkDllFound">否</strong></div>
+            <div class="metric-line"><span>是否已初始化</span><strong id="sdkInitialized">否</strong></div>
+            <div class="metric-line"><span>探测路径</span><strong id="sdkProbePath">--</strong></div>
+            <div class="metric-line"><span>当前灯效</span><strong id="sdkActiveEffect">--</strong></div>
+            <div class="metric-line"><span>最近颜色</span><strong id="sdkLastHex">--</strong></div>
+            <div class="metric-line"><span>最近应用时间</span><strong id="sdkLastAppliedAt">--</strong></div>
+            <div class="hero-actions top-gap">
+              <button id="sdkInitBtn" class="action-btn primary" type="button">重新探测 SDK</button>
+              <button id="sdkSyncBtn" class="action-btn ghost" type="button">套用当前局内灯效</button>
+            </div>
+          </article>
+          <article class="card glass-panel">
+            <div class="card-header"><h3>当前说明</h3><span class="status-chip gold">功能键点亮模式</span></div>
+            <div id="sdkMessageBox" class="info-block">尚未尝试初始化 Logitech LED SDK。</div>
+            <div class="stack-list">
+              <div class="stack-item">默认待机与无功能时保持熄灯，不再铺底色。</div>
+              <div class="stack-item">QWER 会按可用状态点亮，D/F 会按双招可用状态点亮；若官方未返回 ready，则启用兼容判定。</div>
+              <div class="stack-item">技能颜色已按最高通道归一化，尽量把 LED 推到更亮。</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="section-logs" class="content-section" data-page-title="备注 / 日志" data-page-subtitle="接口说明、最佳努力解析提示、运行日志。">
+        <article class="card glass-panel">
+          <div class="card-header"><h3>备注</h3><button id="clearLogsBtn" class="action-btn ghost small" type="button">清空日志</button></div>
+          <div id="notesList" class="stack-list empty-state">暂无备注</div>
+          <div class="subsection-heading">运行日志</div>
+          <div id="logsList" class="stack-list empty-state">暂无日志</div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
